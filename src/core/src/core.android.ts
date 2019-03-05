@@ -24,7 +24,7 @@ export class Stitch {
         });
     }
 
-    static getAppClient(id: string): StitchAppClient | null {
+    static appClient(id: string): StitchAppClient | null {
         try {
             return StitchAppClient.fromNative(com.mongodb.stitch.android.core.Stitch.getAppClient(id));
         } catch (e) {
@@ -33,7 +33,7 @@ export class Stitch {
         }
     }
 
-    static getDefaultAppClient(): StitchAppClient | null {
+    static defaultAppClient(): StitchAppClient | null {
         try {
             return StitchAppClient.fromNative(com.mongodb.stitch.android.core.Stitch.getDefaultAppClient());
         } catch (e) {

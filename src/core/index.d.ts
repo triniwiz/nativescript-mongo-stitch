@@ -5,9 +5,9 @@ export declare class Stitch {
 
     static initializeAppClient(id: string): Promise<StitchAppClient>;
 
-    static getAppClient(id: string): StitchAppClient | null;
+    static appClient(id: string): StitchAppClient | null;
 
-    static getDefaultAppClient(): StitchAppClient | null;
+    static defaultAppClient(): StitchAppClient | null;
 
     static hasAppClient(id: string): boolean;
 }
