@@ -1,18 +1,6 @@
-import { StitchBase } from './core.base';
-
-export class Stitch extends StitchBase {
+export class Stitch {
     ios;
 
-
-    constructor(id: string, defaultClient: boolean) {
-        super();
-        if (defaultClient) {
-
-        } else {
-
-        }
-    }
-
-    protected static initializeAppClient(id: string) {
+    static initializeAppClient(id: string) {
     }
 }

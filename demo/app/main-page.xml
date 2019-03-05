@@ -1,6 +1,8 @@
-<Page xmlns="http://schemas.nativescript.org/tns.xsd" loaded="pageLoaded" class="page"
-  xmlns:ui="nativescript-mongo-stitch">
+<Page xmlns="http://schemas.nativescript.org/tns.xsd" loaded="pageLoaded" class="page">
   <StackLayout class="p-20">
-    <Label text="{{ message }}" class="t-20 text-center c-black" textWrap="true"/>
+    <Label text="message" class="t-20 text-center c-black" textWrap="true"/>
+    <Button text="Switch to account" tap="{{ switchToAccount }}"/>
+    <Button text="Test Local Insert" tap="{{ testLocalInsert }}"/>
+    <Button text="Test Insert" tap="{{ testInsert }}"/>
   </StackLayout>
 </Page>

@@ -1,21 +1,11 @@
-import { StitchBase } from './core.base';
-
-declare var com;
-
-export class Stitch extends StitchBase {
+export class Stitch {
 
     private _android;
 
-    private constructor() {
-        super();
-    }
-
-
-    protected static initializeDefaultAppClient(id: string): Promise<StitchAppClient> {
-        return new Promise((resolve, reject) => {
+    static initializeDefaultAppClient(id: string) {
+        return new Promise<StitchAppClient>((resolve, reject) => {
             try {
-                const instance = new Stitch();
-                instance._android = com.mongodb.stitch.android.core.Stitch.initializeDefaultAppClient(id);
+                const instance = com.mongodb.stitch.android.core.Stitch.initializeDefaultAppClient(id);
                 resolve(StitchAppClient.fromNative(instance));
             } catch (e) {
                 reject(e.getMessage());
@@ -23,11 +13,10 @@ export class Stitch extends StitchBase {
         });
     }
 
-    protected static initializeAppClient(id: string): Promise<StitchAppClient> {
-        return new Promise((resolve, reject) => {
+    static initializeAppClient(id: string) {
+        return new Promise<StitchAppClient>((resolve, reject) => {
             try {
-                const instance = new Stitch();
-                instance._android = com.mongodb.stitch.android.core.Stitch.initializeAppClient(id);
+                const instance = com.mongodb.stitch.android.core.Stitch.initializeAppClient(id);
                 resolve(StitchAppClient.fromNative(instance));
             } catch (e) {
                 reject(e.getMessage());
@@ -35,7 +24,7 @@ export class Stitch extends StitchBase {
         });
     }
 
-    protected static getAppClient(id: string): StitchAppClient | null {
+    static getAppClient(id: string): StitchAppClient | null {
         try {
             return StitchAppClient.fromNative(com.mongodb.stitch.android.core.Stitch.getAppClient(id));
         } catch (e) {
@@ -44,7 +33,7 @@ export class Stitch extends StitchBase {
         }
     }
 
-    protected static getDefaultAppClient(): StitchAppClient | null {
+    static getDefaultAppClient(): StitchAppClient | null {
         try {
             return StitchAppClient.fromNative(com.mongodb.stitch.android.core.Stitch.getDefaultAppClient());
         } catch (e) {
@@ -53,10 +42,17 @@ export class Stitch extends StitchBase {
         }
     }
 
-    protected static hasAppClient(id: string): boolean {
+    static hasAppClient(id: string): boolean {
         return com.mongodb.stitch.android.core.Stitch.hasAppClient(id);
     }
 
+}
+
+export interface NamedServiceClientFactory<T> {
+
+}
+
+export default interface ServiceClientFactory<T> {
 }
 
 export class StitchAppClient {
@@ -95,13 +91,70 @@ export class StitchAppClient {
         });
     }
 
-    serviceClient() {
-        this._android.getServiceClient();
+    getServiceClient<T>(
+        factory: NamedServiceClientFactory<T> | ServiceClientFactory<T>,
+        serviceName?: string
+    ): T {
+        if (serviceName) {
+            return this._android.getServiceClient(factory as any, serviceName);
+        } else {
+            return this._android.getServiceClient(factory as any);
+        }
     }
+
 
     close() {
         this._android.close();
     }
+}
+
+
+export interface RemoteDeleteResult {
+    deletedCount: number;
+}
+
+export interface RemoteFindOneAndModifyOptions {
+    projection?: object;
+    sort?: object;
+    upsert?: boolean;
+    returnNewDocument?: boolean;
+}
+
+export interface RemoteFindOptions {
+    limit?: number;
+    projection?: object;
+    sort?: object;
+}
+
+export interface RemoteInsertOneResult {
+    insertedId: any;
+}
+
+export class RemoteInsertManyResult {
+    public readonly insertedIds: { [key: number]: string };
+
+    constructor(arr: any[]) {
+        const inserted = {};
+        arr.forEach((value, index) => {
+            inserted[index] = value;
+        });
+        this.insertedIds = inserted;
+    }
+}
+
+export interface RemoteUpdateResult {
+    matchedCount: number;
+    modifiedCount: number;
+    upsertedId: any;
+}
+
+export interface UpdateDescription {
+    readonly updatedFields: object;
+    readonly removedFields: string[];
+}
+
+export interface RemoteUpdateOptions {
+    upsert?: boolean;
 }
 
 export interface RemoteCountOptions {
@@ -113,6 +166,16 @@ export interface RemoteFindOptions {
     projection?: object;
     sort?: object;
 }
+
+
+export interface RemoteFindOptions {
+
+    limit?: number;
+
+    projection?: object;
+    sort?: object;
+}
+
 
 export class StitchAuth {
     private _android: com.mongodb.stitch.android.core.auth.StitchAuth;
@@ -143,8 +206,15 @@ export class StitchAuth {
         return null;
     }
 
-    switchToUserWithId(userId: string): StitchUser {
-        return StitchUser.fromNative(this._android.switchToUserWithId(userId));
+    switchToUserWithId(userId: string) {
+        return new Promise<StitchUser>((resolve, reject) => {
+            try {
+                const user = this._android.switchToUserWithId(userId);
+                resolve(StitchUser.fromNative(user));
+            } catch (e) {
+                reject(e.getMessage());
+            }
+        });
     }
 
     listUsers(): StitchUser[] {
@@ -157,7 +227,7 @@ export class StitchAuth {
         return users;
     }
 
-    logout(): Promise<any> {
+    logout() {
         return new Promise((resolve, reject) => {
             this._android.logout().addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
                 onComplete(task: com.google.android.gms.tasks.Task<any>): void {
@@ -171,7 +241,7 @@ export class StitchAuth {
         });
     }
 
-    logoutUserWithId(userId: string): Promise<void> {
+    logoutUserWithId(userId: string) {
         return new Promise((resolve, reject) => {
             this._android.logoutUserWithId(userId).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
                 onComplete(task: com.google.android.gms.tasks.Task<any>): void {
@@ -185,7 +255,7 @@ export class StitchAuth {
         });
     }
 
-    removeUser(): Promise<void> {
+    removeUser() {
         return new Promise((resolve, reject) => {
             this._android.removeUser().addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
                 onComplete(task: com.google.android.gms.tasks.Task<any>): void {
@@ -199,7 +269,7 @@ export class StitchAuth {
         });
     }
 
-    removeUserWithId(userId: string): Promise<void> {
+    removeUserWithId(userId: string) {
         return new Promise((resolve, reject) => {
             this._android.removeUserWithId(userId).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
                 onComplete(task: com.google.android.gms.tasks.Task<any>): void {
@@ -214,8 +284,8 @@ export class StitchAuth {
     }
 
 
-    loginWithCredential(credential: StitchCredential): Promise<StitchUser> {
-        return new Promise((resolve, reject) => {
+    loginWithCredential(credential: StitchCredential) {
+        return new Promise<StitchUser>((resolve, reject) => {
             this._android.loginWithCredential(credential.instance).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
                 onComplete(task: com.google.android.gms.tasks.Task<any>): void {
                     if (task.isSuccessful()) {
@@ -517,8 +587,8 @@ export class StitchUser {
         return this._android.getDeviceId();
     }
 
-    linkWithCredential(credential: StitchCredential): Promise<StitchUser> {
-        return new Promise((resolve, reject) => {
+    linkWithCredential(credential: StitchCredential) {
+        return new Promise<StitchUser>((resolve, reject) => {
             this._android.linkWithCredential(credential.instance).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
                 onComplete(task: com.google.android.gms.tasks.Task<com.mongodb.stitch.android.core.auth.StitchUser>): void {
                     if (task.isSuccessful()) {
@@ -537,25 +607,23 @@ export interface StitchAuthListener {
 
     onAuthEvent?(auth: StitchAuth);
 
-    onUserAdded?(auth: StitchAuth, addedUser: StitchUser)
+    onUserAdded?(auth: StitchAuth, addedUser: StitchUser);
 
-    onUserLinked?(auth: StitchAuth, linkedUser: StitchUser)
+    onUserLinked?(auth: StitchAuth, linkedUser: StitchUser);
 
-    onUserLoggedIn?(auth: StitchAuth, loggedInUser: StitchUser)
+    onUserLoggedIn?(auth: StitchAuth, loggedInUser: StitchUser);
 
-    onUserLoggedOut?(auth: StitchAuth, loggedOutUser: StitchUser)
+    onUserLoggedOut?(auth: StitchAuth, loggedOutUser: StitchUser);
 
     onActiveUserChanged?(
         auth: StitchAuth,
         currentActiveUser: StitchUser | undefined,
         previousActiveUser: StitchUser | undefined
-    )
+    );
 
 
-    onUserRemoved?(auth: StitchAuth, removedUser: StitchUser)
+    onUserRemoved?(auth: StitchAuth, removedUser: StitchUser);
 
-    onListenerRegistered?(auth: StitchAuth)
+    onListenerRegistered?(auth: StitchAuth);
 }
 
-export class Bson {
-}

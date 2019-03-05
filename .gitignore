@@ -29,3 +29,4 @@ src/core/dist
 src/core/src/*.d.ts
 !src/core/index.d.ts
 package-lock.json
+demo/config.ts

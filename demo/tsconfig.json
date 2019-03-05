@@ -31,11 +31,20 @@
         }
     },
     "include": [
-        "../src",
-        "**/*"
+        "../src/core",
+        "../src/sdk",
+        "../src/services/aws",
+        "../src/services/aws-s3",
+        "../src/services/aws-ses",
+        "../src/services/http",
+        "../src/services/mongodb-remote",
+        "../src/services/twilio",
+        "**/*",
+        "../src/node_modules/tns-core-modules/tns-core-modules.d.ts"
     ],
     "exclude": [
         "../src/node_modules",
+        "../src/",
         "node_modules",
         "platforms"
     ],
