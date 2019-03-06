@@ -1,13 +1,12 @@
-import { RemoteCountOptions, RemoteFindOneAndModifyOptions, RemoteFindOptions, RemoteUpdateOptions } from 'nativescript-mongo-stitch-core';
-export declare class LocalMongoClient {
+import { NamedServiceClientFactory, RemoteCountOptions, RemoteFindOneAndModifyOptions, RemoteFindOptions, RemoteUpdateOptions } from 'nativescript-mongo-stitch-core';
+import { ObjectId } from './bson';
+export declare class RemoteMongoClient implements NamedServiceClientFactory {
     private _android;
+    private _nativeFactory;
     private constructor();
-    static readonly factory: com.mongodb.stitch.android.core.services.internal.ServiceClientFactory<com.mongodb.client.MongoClient>;
-}
-export declare class RemoteMongoClient {
-    private _android;
-    private constructor();
-    static readonly factory: com.mongodb.stitch.android.core.services.internal.NamedServiceClientFactory<com.mongodb.stitch.android.services.mongodb.remote.RemoteMongoClient>;
+    static readonly factory: any;
+    instance: any;
+    readonly nativeFactory: any;
     static fromNative(instance: any): RemoteMongoClient;
     db(name: string): RemoteMongoDatabase;
 }
@@ -24,6 +23,7 @@ export declare class RemoteMongoCollection<T> {
     static fromNative(instance: any): RemoteMongoCollection<{}>;
     readonly namespace: string;
     count(query?: object, options?: RemoteCountOptions): Promise<number>;
+    sync(): Sync;
     find(query?: object, options?: RemoteFindOptions): RemoteMongoReadOperation<T>;
     findOne(query?: object, options?: RemoteFindOptions): Promise<T>;
     findOneAndUpdate(query: object, update: object, options?: RemoteFindOneAndModifyOptions): Promise<T>;
@@ -48,4 +48,24 @@ export declare class RemoteMongoCursor<T> {
     private constructor();
     static fromNative(instance: any): RemoteMongoCursor<{}>;
     next(): Promise<T>;
+}
+export declare enum ConflictResolvers {
+    localWins = "localWins",
+    remoteWins = "remoteWins"
+}
+export declare enum OperationType {
+    DELETE = "delete",
+    INSERT = "insert",
+    REPLACE = "replace",
+    UPDATE = "update",
+    UNKNOWN = "unknown"
+}
+export declare class Sync {
+    private _android;
+    private constructor();
+    static fromNative(instance: any): Sync;
+    configure(conflictResolver: ConflictResolvers, listener: (error: {
+        id: ObjectId;
+        message: string;
+    }) => void): void;
 }

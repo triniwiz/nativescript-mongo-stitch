@@ -321,12 +321,24 @@ export class HttpResponse {
     }
 }
 
-export class HttpServiceClient {
+export class HttpServiceClient implements NamedServiceClientFactory {
 
     private _android: com.mongodb.stitch.android.services.http.HttpServiceClient;
 
-    public static get factory(): NamedServiceClientFactory<HttpServiceClient> {
-        return com.mongodb.stitch.android.services.http.HttpServiceClient.factory;
+    private _nativeFactory;
+
+    public static get factory() {
+        const client = new HttpServiceClient();
+        client._nativeFactory = com.mongodb.stitch.android.services.http.HttpServiceClient.factory;
+        return client;
+    }
+
+    set instance(instance) {
+        this._android = instance;
+    }
+
+    get nativeFactory() {
+        return this._nativeFactory;
     }
 
     execute(request: HttpRequest) {

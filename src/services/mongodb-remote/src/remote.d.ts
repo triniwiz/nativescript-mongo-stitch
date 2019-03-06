@@ -1,13 +1,11 @@
-import { RemoteCountOptions, RemoteFindOneAndModifyOptions, RemoteFindOptions, RemoteUpdateOptions } from 'nativescript-mongo-stitch-core';
-export declare class LocalMongoClient {
+import { NamedServiceClientFactory, RemoteCountOptions, RemoteFindOneAndModifyOptions, RemoteFindOptions, RemoteUpdateOptions } from 'nativescript-mongo-stitch-core';
+export declare class RemoteMongoClient implements NamedServiceClientFactory {
     private _android;
+    private _nativeFactory;
     private constructor();
-    static readonly factory: com.mongodb.stitch.android.core.services.internal.ServiceClientFactory<com.mongodb.client.MongoClient>;
-}
-export declare class RemoteMongoClient {
-    private _android;
-    private constructor();
-    static readonly factory: com.mongodb.stitch.android.core.services.internal.NamedServiceClientFactory<com.mongodb.stitch.android.services.mongodb.remote.RemoteMongoClient>;
+    static readonly factory: RemoteMongoClient;
+    instance: any;
+    readonly nativeFactory: any;
     static fromNative(instance: any): RemoteMongoClient;
     db(name: string): RemoteMongoDatabase;
 }
@@ -24,6 +22,7 @@ export declare class RemoteMongoCollection<T> {
     static fromNative(instance: any): RemoteMongoCollection<{}>;
     readonly namespace: string;
     count(query?: object, options?: RemoteCountOptions): Promise<number>;
+    sync(): void;
     find(query?: object, options?: RemoteFindOptions): RemoteMongoReadOperation<T>;
     findOne(query?: object, options?: RemoteFindOptions): Promise<T>;
     findOneAndUpdate(query: object, update: object, options?: RemoteFindOneAndModifyOptions): Promise<T>;

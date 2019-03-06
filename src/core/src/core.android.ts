@@ -8,7 +8,7 @@ export class Stitch {
                 const instance = com.mongodb.stitch.android.core.Stitch.initializeDefaultAppClient(id);
                 resolve(StitchAppClient.fromNative(instance));
             } catch (e) {
-                reject(e.getMessage());
+                reject(e.message);
             }
         });
     }
@@ -19,7 +19,7 @@ export class Stitch {
                 const instance = com.mongodb.stitch.android.core.Stitch.initializeAppClient(id);
                 resolve(StitchAppClient.fromNative(instance));
             } catch (e) {
-                reject(e.getMessage());
+                reject(e.message);
             }
         });
     }
@@ -28,7 +28,7 @@ export class Stitch {
         try {
             return StitchAppClient.fromNative(com.mongodb.stitch.android.core.Stitch.getAppClient(id));
         } catch (e) {
-            console.error(e.getMessage());
+            console.error(e.message);
             return null;
         }
     }
@@ -37,7 +37,7 @@ export class Stitch {
         try {
             return StitchAppClient.fromNative(com.mongodb.stitch.android.core.Stitch.getDefaultAppClient());
         } catch (e) {
-            console.error(e.getMessage());
+            console.error(e.message);
             return null;
         }
     }
@@ -49,10 +49,13 @@ export class Stitch {
 }
 
 export interface NamedServiceClientFactory<T> {
-
+    instance: any;
+    readonly nativeFactory: any;
 }
 
-export default interface ServiceClientFactory<T> {
+export interface ServiceClientFactory<T> {
+    instance: any;
+    readonly nativeClientFactory: any;
 }
 
 export class StitchAppClient {
@@ -95,11 +98,15 @@ export class StitchAppClient {
         factory: NamedServiceClientFactory<T> | ServiceClientFactory<T>,
         serviceName?: string
     ): T {
+        let instance;
         if (serviceName) {
-            return this._android.getServiceClient(factory as any, serviceName);
+            instance = this._android.getServiceClient((factory as any).nativeFactory, serviceName);
         } else {
-            return this._android.getServiceClient(factory as any);
+            instance = this._android.getServiceClient((factory as any).nativeClientFactory);
         }
+        factory.instance = instance;
+
+        return factory as any;
     }
 
 
@@ -113,11 +120,17 @@ export interface RemoteDeleteResult {
     deletedCount: number;
 }
 
+export interface LocalDeleteResult extends RemoteDeleteResult {
+}
+
 export interface RemoteFindOneAndModifyOptions {
     projection?: object;
     sort?: object;
     upsert?: boolean;
     returnNewDocument?: boolean;
+}
+
+export interface LocalFindOneAndModifyOptions extends RemoteFindOneAndModifyOptions {
 }
 
 export interface RemoteFindOptions {
@@ -126,8 +139,15 @@ export interface RemoteFindOptions {
     sort?: object;
 }
 
+export interface LocalFindOptions extends RemoteFindOptions {
+
+}
+
 export interface RemoteInsertOneResult {
     insertedId: any;
+}
+
+export interface LocalInsertOneResult extends RemoteInsertOneResult {
 }
 
 export class RemoteInsertManyResult {
@@ -142,25 +162,49 @@ export class RemoteInsertManyResult {
     }
 }
 
+export class LocalInsertManyResult extends RemoteInsertManyResult {
+    constructor(arr: any[]) {
+        super(arr);
+    }
+}
+
 export interface RemoteUpdateResult {
     matchedCount: number;
     modifiedCount: number;
     upsertedId: any;
 }
 
-export interface UpdateDescription {
+export interface LocalUpdateResult extends RemoteUpdateResult {
+
+}
+
+export interface RemoteUpdateDescription {
     readonly updatedFields: object;
     readonly removedFields: string[];
 }
 
+
+export interface LocalUpdateDescription extends RemoteUpdateDescription {
+}
+
+
 export interface RemoteUpdateOptions {
     upsert?: boolean;
+}
+
+
+export interface LocalUpdateOptions extends RemoteUpdateOptions {
+
 }
 
 export interface RemoteCountOptions {
     limit?: number;
 }
 
+export interface LocalCountOptions extends RemoteCountOptions {
+
+}
+
 export interface RemoteFindOptions {
     limit?: number;
     projection?: object;
@@ -168,14 +212,9 @@ export interface RemoteFindOptions {
 }
 
 
-export interface RemoteFindOptions {
+export interface LocalFindOptions extends RemoteFindOptions {
 
-    limit?: number;
-
-    projection?: object;
-    sort?: object;
 }
-
 
 export class StitchAuth {
     private _android: com.mongodb.stitch.android.core.auth.StitchAuth;

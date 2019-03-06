@@ -1,34 +1,37 @@
 import {
+    NamedServiceClientFactory,
     RemoteCountOptions,
     RemoteDeleteResult,
     RemoteFindOneAndModifyOptions,
     RemoteFindOptions,
     RemoteInsertManyResult,
     RemoteInsertOneResult,
+    RemoteUpdateDescription,
     RemoteUpdateOptions,
     RemoteUpdateResult
 } from 'nativescript-mongo-stitch-core';
+import { ObjectId } from './bson';
+import { deserialize } from './bson.android';
 
-
-export class LocalMongoClient {
-    private _android: com.mongodb.stitch.android.services.mongodb.local.LocalMongoDbService;
-
-    private constructor() {
-    }
-
-    static get factory() {
-        return com.mongodb.stitch.android.services.mongodb.local.LocalMongoDbService.clientFactory;
-    }
-}
-
-export class RemoteMongoClient {
+export class RemoteMongoClient implements NamedServiceClientFactory {
     private _android: com.mongodb.stitch.android.services.mongodb.remote.RemoteMongoClient;
+    private _nativeFactory;
 
     private constructor() {
     }
 
-    static get factory() {
-        return com.mongodb.stitch.android.services.mongodb.remote.RemoteMongoClient.factory;
+    static get factory(): any {
+        const client = new RemoteMongoClient();
+        client._nativeFactory = com.mongodb.stitch.android.services.mongodb.remote.RemoteMongoClient.factory;
+        return client;
+    }
+
+    set instance(instance) {
+        this._android = instance;
+    }
+
+    get nativeFactory() {
+        return this._nativeFactory;
     }
 
     static fromNative(instance) {
@@ -41,7 +44,6 @@ export class RemoteMongoClient {
         return RemoteMongoDatabase.fromNative(this._android.getDatabase(name));
     }
 }
-
 
 export class RemoteMongoDatabase {
     private _android: com.mongodb.stitch.android.services.mongodb.remote.RemoteMongoDatabase;
@@ -110,9 +112,10 @@ export class RemoteMongoCollection<T> {
     }
 
 
-    sync(){
-        this._android.sync().configure()
+    sync(): Sync {
+        return Sync.fromNative(this._android.sync());
     }
+
     find(
         query?: object,
         options?: RemoteFindOptions
@@ -157,7 +160,12 @@ export class RemoteMongoCollection<T> {
             findQuery.first().addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
                 onComplete(task: com.google.android.gms.tasks.Task<any>): void {
                     if (task.isSuccessful()) {
-                        resolve(task.getResult());
+                        const first = task.getResult();
+                        let data = first ? JSON.parse(first.toJson() || '{}') : null;
+                        if (data && data._id) {
+                            data = Object.assign(data, {_id: ObjectId.fromNative(first.getObjectId('_id'))});
+                        }
+                        resolve(data);
                     } else {
                         reject(task.getException().getMessage());
                     }
@@ -185,6 +193,8 @@ export class RemoteMongoCollection<T> {
                     findQuery.sort(org.bson.Document.parse(JSON.stringify(options.sort)));
                 }
             }
+
+            // TODO replace with sdk method when released 🤷
             findQuery.first().addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
                 onComplete(task: com.google.android.gms.tasks.Task<any>): void {
                     if (task.isSuccessful()) {
@@ -195,11 +205,51 @@ export class RemoteMongoCollection<T> {
                             opts.upsert(options.upsert);
                         }
                         owner._android.updateOne(doc, org.bson.Document.parse(JSON.stringify(update)), opts).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
-                            onComplete(updateTask: com.google.android.gms.tasks.Task<any>): void {
+                            onComplete(updateTask: com.google.android.gms.tasks.Task<com.mongodb.stitch.core.services.mongodb.remote.RemoteUpdateResult>): void {
                                 if (updateTask.isSuccessful()) {
-                                    resolve(options && options.returnNewDocument ? updateTask.getResult() : null);
+                                    if (options) {
+                                        if (options.returnNewDocument) {
+                                            if (!doc && options.upsert) {
+                                                const _task = updateTask.getResult();
+                                                const filter = new org.bson.Document();
+                                                filter.put('_id', _task.getUpsertedId().asObjectId());
+                                                owner._android.find(filter).first().addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
+                                                    onComplete(newTask: com.google.android.gms.tasks.Task<any>): void {
+                                                        if (newTask.isSuccessful()) {
+                                                            const _doc = newTask.getResult();
+                                                            resolve(deserialize(_doc));
+                                                        } else {
+                                                            reject(newTask.getException().getMessage());
+                                                        }
+
+                                                    }
+                                                }));
+                                            } else if (doc) {
+                                                const id = doc.getObjectId('_id');
+                                                const filter = new org.bson.Document();
+                                                filter.put('_id', id);
+                                                owner._android.find(filter).first().addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
+                                                    onComplete(newTask: com.google.android.gms.tasks.Task<any>): void {
+                                                        if (newTask.isSuccessful()) {
+                                                            const _doc = newTask.getResult();
+                                                            resolve(deserialize(_doc));
+                                                        } else {
+                                                            reject(newTask.getException().getMessage());
+                                                        }
+
+                                                    }
+                                                }));
+                                            } else {
+                                                resolve(null);
+                                            }
+                                        } else {
+                                            resolve(null);
+                                        }
+                                    } else {
+                                        resolve(null);
+                                    }
                                 } else {
-                                    reject(task.getException().getMessage());
+                                    reject(updateTask.getException().getMessage());
                                 }
                             }
                         }));
@@ -242,9 +292,12 @@ export class RemoteMongoCollection<T> {
     insertOne(document: T) {
         return new Promise<RemoteInsertOneResult>((resolve, reject) => {
             this._android.insertOne(org.bson.Document.parse(JSON.stringify(document))).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
-                onComplete(task: com.google.android.gms.tasks.Task<any>): void {
+                onComplete(task: com.google.android.gms.tasks.Task<com.mongodb.stitch.core.services.mongodb.remote.RemoteInsertOneResult>): void {
                     if (task.isSuccessful()) {
-                        resolve(task.getResult());
+                        const result = task.getResult();
+                        resolve(<RemoteInsertOneResult>{
+                            insertedId: ObjectId.fromNative(result.getInsertedId().asObjectId())
+                        });
                     } else {
                         reject(task.getException().getMessage());
                     }
@@ -261,9 +314,20 @@ export class RemoteMongoCollection<T> {
                 nativeList.add(org.bson.Document.parse(JSON.stringify(item)));
             });
             this._android.insertMany(nativeList).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
-                onComplete(task: com.google.android.gms.tasks.Task<any>): void {
+                onComplete(task: com.google.android.gms.tasks.Task<com.mongodb.stitch.core.services.mongodb.remote.RemoteInsertManyResult>): void {
                     if (task.isSuccessful()) {
-                        resolve(task.getResult());
+                        const resultIds = [];
+                        const result = task.getResult();
+                        if (result) {
+                            const ids = result.getInsertedIds();
+                            const keys = ids.keySet().toArray();
+                            const length = keys.length;
+                            for (let i = 0; i < length; i++) {
+                                const value = ids.get(keys[i]);
+                                resultIds.push(ObjectId.fromNative(value.asObjectId()));
+                            }
+                        }
+                        resolve(new RemoteInsertManyResult(resultIds));
                     } else {
                         reject(task.getException().getMessage());
                     }
@@ -276,9 +340,12 @@ export class RemoteMongoCollection<T> {
     deleteOne(query: object) {
         return new Promise<RemoteDeleteResult>((resolve, reject) => {
             this._android.deleteOne(org.bson.Document.parse(JSON.stringify(query))).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
-                onComplete(task: com.google.android.gms.tasks.Task<any>): void {
+                onComplete(task: com.google.android.gms.tasks.Task<com.mongodb.stitch.core.services.mongodb.remote.RemoteDeleteResult>): void {
                     if (task.isSuccessful()) {
-                        resolve(task.getResult());
+                        const results = task.getResult();
+                        resolve(<RemoteDeleteResult>{
+                            deletedCount: results.getDeletedCount()
+                        });
                     } else {
                         reject(task.getException().getMessage());
                     }
@@ -290,9 +357,12 @@ export class RemoteMongoCollection<T> {
     deleteMany(query: object) {
         return new Promise<RemoteDeleteResult>((resolve, reject) => {
             this._android.deleteMany(org.bson.Document.parse(JSON.stringify(query))).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
-                onComplete(task: com.google.android.gms.tasks.Task<any>): void {
+                onComplete(task: com.google.android.gms.tasks.Task<com.mongodb.stitch.core.services.mongodb.remote.RemoteDeleteResult>): void {
                     if (task.isSuccessful()) {
-                        resolve(task.getResult());
+                        const results = task.getResult();
+                        resolve(<RemoteDeleteResult>{
+                            deletedCount: results.getDeletedCount()
+                        });
                     } else {
                         reject(task.getException().getMessage());
                     }
@@ -312,9 +382,14 @@ export class RemoteMongoCollection<T> {
                 opts.upsert(updateOptions.upsert);
             }
             this._android.updateOne(org.bson.Document.parse(JSON.stringify(query)), org.bson.Document.parse(JSON.stringify(update)), opts).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
-                onComplete(task: com.google.android.gms.tasks.Task<any>): void {
+                onComplete(task: com.google.android.gms.tasks.Task<com.mongodb.stitch.core.services.mongodb.remote.RemoteUpdateResult>): void {
                     if (task.isSuccessful()) {
-                        resolve(task.getResult());
+                        const result = task.getResult();
+                        resolve(<RemoteUpdateResult>{
+                            modifiedCount: result.getModifiedCount(),
+                            matchedCount: result.getMatchedCount(),
+                            upsertedId: ObjectId.fromNative(result.getUpsertedId().asObjectId())
+                        });
                     } else {
                         reject(task.getException().getMessage());
                     }
@@ -334,9 +409,14 @@ export class RemoteMongoCollection<T> {
                 opts.upsert(updateOptions.upsert);
             }
             this._android.updateMany(org.bson.Document.parse(JSON.stringify(query)), org.bson.Document.parse(JSON.stringify(update)), opts).addOnCompleteListener(new com.google.android.gms.tasks.OnCompleteListener({
-                onComplete(task: com.google.android.gms.tasks.Task<any>): void {
+                onComplete(task: com.google.android.gms.tasks.Task<com.mongodb.stitch.core.services.mongodb.remote.RemoteUpdateResult>): void {
                     if (task.isSuccessful()) {
-                        resolve(task.getResult());
+                        const result = task.getResult();
+                        resolve(<RemoteUpdateResult>{
+                            modifiedCount: result.getModifiedCount(),
+                            matchedCount: result.getMatchedCount(),
+                            upsertedId: ObjectId.fromNative(result.getUpsertedId().asObjectId())
+                        });
                     } else {
                         reject(task.getException().getMessage());
                     }
@@ -410,5 +490,107 @@ export class RemoteMongoCursor<T> {
                 }
             }));
         });
+    }
+}
+
+
+export enum ConflictResolvers {
+    localWins = 'localWins',
+    remoteWins = 'remoteWins'
+}
+
+export enum OperationType {
+    DELETE = 'delete',
+    INSERT = 'insert',
+    REPLACE = 'replace',
+    UPDATE = 'update',
+    UNKNOWN = 'unknown',
+}
+
+export class Sync {
+    private _android: com.mongodb.stitch.android.services.mongodb.remote.Sync<any>;
+    private isSupported = false; // Error: java.lang.NoSuchMethodError: no non-static method
+
+    private constructor() {
+    }
+
+    public static fromNative(instance) {
+        const sync = new Sync();
+        sync._android = instance;
+        return sync;
+    }
+
+    public c(){
+        this._android.
+    }
+
+    public configure(conflictResolver: ConflictResolvers, listener: (error: { id: ObjectId, message: string }) => void) {
+
+        if (this.isSupported) return;
+        let resolver: com.mongodb.stitch.core.services.mongodb.remote.sync.ConflictHandler;
+        switch (conflictResolver) {
+            case ConflictResolvers.remoteWins:
+                resolver = com.mongodb.stitch.core.services.mongodb.remote.sync.DefaultSyncConflictResolvers.remoteWins();
+                break;
+            default:
+                resolver = com.mongodb.stitch.core.services.mongodb.remote.sync.DefaultSyncConflictResolvers.localWins();
+                break;
+        }
+
+        const changeListener = new com.mongodb.stitch.core.services.mongodb.remote.sync.ChangeEventListener<any>({
+            onEvent(docId: org.bson.BsonValue, event: com.mongodb.stitch.core.services.mongodb.remote.ChangeEvent<any>): void {
+                let operationType: OperationType;
+                switch (event.getOperationType()) {
+                    case com.mongodb.stitch.core.services.mongodb.remote.OperationType.DELETE:
+                        operationType = OperationType.DELETE;
+                        break;
+                    case com.mongodb.stitch.core.services.mongodb.remote.OperationType.INSERT:
+                        operationType = OperationType.INSERT;
+                        break;
+                    case com.mongodb.stitch.core.services.mongodb.remote.OperationType.REPLACE:
+                        operationType = OperationType.REPLACE;
+                        break;
+                    case com.mongodb.stitch.core.services.mongodb.remote.OperationType.UPDATE:
+                        operationType = OperationType.UPDATE;
+                        break;
+                    default:
+                        operationType = OperationType.UNKNOWN;
+                }
+
+                const desc = event.getUpdateDescription();
+                const removedFields = [];
+                const fields = desc.getRemovedFields().toArray();
+                const fieldsLength = fields.length;
+                for (let i = 0; i < fieldsLength; i++) {
+                    removedFields.push(fields[i]);
+                }
+
+                const updatedFields = {};
+
+                const nativeUpdatedFields = desc.getUpdatedFields();
+                const keys = nativeUpdatedFields.keySet().toArray();
+                const keysLength = keys.length;
+                for (let i = 0; i < keysLength; i++) {
+                    const key = keys[i];
+                    updatedFields[key] = deserialize(nativeUpdatedFields.get(key));
+                }
+                const e = {
+                    hasUncommittedWrites: event.hasUncommittedWrites(),
+                    operationType: operationType,
+                    namespace: event.getNamespace().getCollectionName(),
+                    updateDescription: <RemoteUpdateDescription>{
+                        removedFields,
+                        updatedFields
+                    },
+                };
+            }
+        });
+
+        const errorListener = new com.mongodb.stitch.core.services.mongodb.remote.ExceptionListener({
+            onError(docId: org.bson.BsonValue, exception: java.lang.Exception): void {
+                listener({id: ObjectId.fromNative(docId.asObjectId()), message: exception.getMessage()});
+            }
+        });
+        this._android.configure(resolver, changeListener, errorListener);
     }
 }
