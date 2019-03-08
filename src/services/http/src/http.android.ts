@@ -137,6 +137,100 @@ const getCookies = (map: java.util.Map<string, com.mongodb.stitch.core.services.
     return _map;
 };
 
+
+export class Builder {
+    private _android: com.mongodb.stitch.core.services.http.HttpRequest.Builder;
+    private url: string;
+    private method: HttpMethod;
+    private authUrl: string;
+    private headers: Map<string, string[]>;
+    private cookies: Map<string, string>;
+    private body: object;
+    private encodeBodyAsJson: boolean;
+    private form: Map<string, string>;
+    private followRedirects: boolean;
+
+    public constructor() {
+        this._android = new com.mongodb.stitch.core.services.http.HttpRequest.Builder();
+    }
+
+    public withUrl(url: string): this {
+        this.url = url;
+        this._android = this._android.withAuthUrl(url);
+        return this;
+    }
+
+    public withMethod(method: HttpMethod): this {
+        this.method = method;
+        this._android = this._android.withMethod(getNativeMethod(method));
+        return this;
+    }
+
+
+    public withAuthUrl(authUrl: string): this {
+        this.authUrl = authUrl;
+        this._android = this._android.withAuthUrl(authUrl);
+        return this;
+    }
+
+
+    public withHeaders(headers: Map<string, string[]>): this {
+        this.headers = headers;
+        this._android = this._android.withHeaders(getNativeHeaders(headers));
+        return this;
+    }
+
+
+    public withCookies(cookies: Map<string, string>): this {
+        this.cookies = cookies;
+        this._android = this._android.withCookies(getNativeMap(cookies));
+        return this;
+    }
+
+
+    public withBody(body: any): this {
+        this.body = body;
+        this._android = this._android.withBody(body);
+        return this;
+    }
+
+
+    public withEncodeBodyAsJson(encodeBodyAsJson: boolean): this {
+        this.encodeBodyAsJson = encodeBodyAsJson;
+        this._android = this._android.withEncodeBodyAsJson(encodeBodyAsJson as any);
+        return this;
+    }
+
+
+    public withForm(form: Map<string, string>): this {
+        this.form = form;
+        this._android = this._android.withForm(getNativeMap(form));
+        return this;
+    }
+
+
+    public withFollowRedirects(followRedirects: boolean): this {
+        this.followRedirects = followRedirects;
+        this._android = this._android.withFollowRedirects(followRedirects as any);
+        return this;
+    }
+
+
+    public build(): HttpRequest {
+        if (this.url === undefined || this.url === '') {
+            throw new Error('must set url');
+        }
+
+        if (this.method === undefined) {
+            throw new Error('must set method');
+        }
+
+        return HttpRequest.fromNative(
+            this._android
+        );
+    }
+}
+
 export class HttpRequest {
     private _android: com.mongodb.stitch.core.services.http.HttpRequest;
 
@@ -144,6 +238,14 @@ export class HttpRequest {
         builder: any
     ) {
         this._android = builder;
+    }
+
+    public static fromNative(instance) {
+        return new HttpRequest(instance);
+    }
+
+    public static Builder() {
+        return new Builder();
     }
 
     get url(): string {
@@ -181,99 +283,6 @@ export class HttpRequest {
     get followRedirects(): boolean {
         return this._android.getFollowRedirects().booleanValue();
     }
-
-    public static Builder = new class {
-        private _android: com.mongodb.stitch.core.services.http.HttpRequest.Builder;
-        private url: string;
-        private method: HttpMethod;
-        private authUrl: string;
-        private headers: Map<string, string[]>;
-        private cookies: Map<string, string>;
-        private body: object;
-        private encodeBodyAsJson: boolean;
-        private form: Map<string, string>;
-        private followRedirects: boolean;
-
-        public constructor() {
-            this._android = new com.mongodb.stitch.core.services.http.HttpRequest.Builder();
-        }
-
-        public withUrl(url: string): this {
-            this.url = url;
-            this._android = this._android.withAuthUrl(url);
-            return this;
-        }
-
-        public withMethod(method: HttpMethod): this {
-            this.method = method;
-            this._android = this._android.withMethod(getNativeMethod(method));
-            return this;
-        }
-
-
-        public withAuthUrl(authUrl: string): this {
-            this.authUrl = authUrl;
-            this._android = this._android.withAuthUrl(authUrl);
-            return this;
-        }
-
-
-        public withHeaders(headers: Map<string, string[]>): this {
-            this.headers = headers;
-            this._android = this._android.withHeaders(getNativeHeaders(headers));
-            return this;
-        }
-
-
-        public withCookies(cookies: Map<string, string>): this {
-            this.cookies = cookies;
-            this._android = this._android.withCookies(getNativeMap(cookies));
-            return this;
-        }
-
-
-        public withBody(body: any): this {
-            this.body = body;
-            this._android = this._android.withBody(body);
-            return this;
-        }
-
-
-        public withEncodeBodyAsJson(encodeBodyAsJson: boolean): this {
-            this.encodeBodyAsJson = encodeBodyAsJson;
-            this._android = this._android.withEncodeBodyAsJson(encodeBodyAsJson as any);
-            return this;
-        }
-
-
-        public withForm(form: Map<string, string>): this {
-            this.form = form;
-            this._android = this._android.withForm(getNativeMap(form));
-            return this;
-        }
-
-
-        public withFollowRedirects(followRedirects: boolean): this {
-            this.followRedirects = followRedirects;
-            this._android = this._android.withFollowRedirects(followRedirects as any);
-            return this;
-        }
-
-
-        public build(): HttpRequest {
-            if (this.url === undefined || this.url === '') {
-                throw new Error('must set url');
-            }
-
-            if (this.method === undefined) {
-                throw new Error('must set method');
-            }
-
-            return new HttpRequest(
-                this._android
-            );
-        }
-    };
 
     get instance() {
         return this._android;
@@ -353,7 +362,7 @@ export class HttpServiceClient implements NamedServiceClientFactory {
                     }
                 }
             }));
-        }) as any;
+        });
     }
 
     private constructor() {

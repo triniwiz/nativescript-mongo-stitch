@@ -10,9 +10,6 @@ export class ObjectId {
         return objId;
     }
 
-    get counter() {
-        return this._android.getCounter();
-    }
 
     toHexString() {
         return this._android.toHexString();
@@ -39,15 +36,30 @@ export class ObjectId {
 import * as bson from 'bson';
 
 export function deserialize(object: any) {
-    if (typeof object.getClass  === 'function' && typeof object.getClass().getName === 'function' && object.getClass().getName() === 'org.bson.Document') {
+    if (typeof object.getClass === 'function' && typeof object.getClass().getName === 'function' && object.getClass().getName() === 'org.bson.Document') {
         return (bson as any).EJSON.parse(object.toJson());
+    }
+    return null;
+}
+
+export function serialize(object: any) {
+    if (object) {
+        const newObject = {};
+        Object.keys(object).forEach(key => {
+            let value = object[key];
+            if (value instanceof ObjectId) {
+                value = {$oid: value.toHexString()};
+            }
+            newObject[key] = value;
+        });
+        return org.bson.Document.parse(JSON.stringify(object));
     }
     return null;
 }
 
 
 export class Bson {
-    public static ObjectId(): ObjectId {
-        return ObjectId.fromNative(new org.bson.types.ObjectId());
+    public static ObjectId(id?: string): ObjectId {
+        return ObjectId.fromNative(new org.bson.types.ObjectId(id));
     }
 }

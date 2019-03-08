@@ -409,10 +409,7 @@ export class LocalMongoCursor<T> {
     public next() {
         const doc = this._android.next();
         let data = doc ? JSON.parse(doc.toJson() || '{}') : null;
-        if (data && data._id) {
-            data = Object.assign(data, {_id: ObjectId.fromNative(doc.getObjectId('_id'))});
-        }
-        return data;
+        return deserialize(data);
     }
 
     public hasNext() {

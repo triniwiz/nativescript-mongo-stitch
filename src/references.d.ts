@@ -16,3 +16,4 @@
 
 /// <reference path="./typings/android/local-android.d.ts" />
 /// <reference path="./typings/android/local-core.d.ts" />
+/// <reference path="./typings/objc!TNSStitch.d.ts" />

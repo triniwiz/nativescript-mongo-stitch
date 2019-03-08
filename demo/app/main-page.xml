@@ -3,7 +3,8 @@
     <Label text="message" class="t-20 text-center c-black" textWrap="true"/>
     <Button text="Switch to account" tap="{{ switchToAccount }}"/>
     <Button text="Test Insert" tap="{{ testInsert }}"/>
-    <Button text="Test Find One Update" tap="{{ testFindOneUpdate }}"/>
+    <Button text="Test Update One" tap="{{ testUpdateOne }}"/>
+    <Button text="Test Find All" tap="{{ testFindAll }}"/>
     <Button text="Test Local Insert" tap="{{ testLocalInsert }}"/>
     <Button text="Test Local Find" tap="{{ testLocalFind }}"/>
     <Button text="Test Local Find All" tap="{{ testLocalFindAll }}"/>

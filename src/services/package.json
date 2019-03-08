@@ -1,0 +1,6 @@
+{
+    "private": true,
+    "scripts": {
+        "build": "cd ./aws && npm run build && cd ../ && cd ./http && npm run build && cd ../  && cd ./mongodb-remote && npm run build && cd ../ && cd ./twilio && npm run build && cd ../ "
+    }
+}

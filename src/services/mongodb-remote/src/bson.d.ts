@@ -2,7 +2,6 @@ export declare class ObjectId {
     private _android;
     private constructor();
     static fromNative(instance: any): ObjectId;
-    readonly counter: number;
     toHexString(): string;
     readonly date: Date;
     readonly time: number;
@@ -10,6 +9,7 @@ export declare class ObjectId {
     readonly timeStamp: number;
 }
 export declare function deserialize(object: any): any;
+export declare function serialize(object: any): any;
 export declare class Bson {
-    static ObjectId(): ObjectId;
+    static ObjectId(id?: string): ObjectId;
 }

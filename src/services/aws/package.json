@@ -6,14 +6,14 @@
   "typings": "index.d.ts",
   "nativescript": {
 	"platforms": {
-	  "android": "5.2.0",
-	  "ios": "5.2.0"
+	  "android": "4.0.0",
+	  "ios": "4.0.0"
 	}
   },
   "scripts": {
 	"tsc": "tsc",
-	"build": "npm run tsc && npm run build.native",
-	"build.native": "node scripts/build-native.js",
+	"build": "npm run tsc",
+	"build.native": "cd ../../ && node scripts/build-native.js && cd -",
 	"postclone": "npm i && node scripts/postclone.js && cd ../demo && npm i && npx rimraf -- package-lock.json && cd ../src",
 	"test.android": "npm run tsc && npm run tslint && cd ../demo && tns build android && tns test android --justlaunch",
 	"test.ios": "npm run tsc && npm run tslint && cd ..core.android.d.ts/demo && tns build ios && tns test ios --justlaunch",

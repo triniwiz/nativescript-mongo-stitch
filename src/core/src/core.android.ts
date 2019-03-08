@@ -1,7 +1,5 @@
 export class Stitch {
 
-    private _android;
-
     static initializeDefaultAppClient(id: string) {
         return new Promise<StitchAppClient>((resolve, reject) => {
             try {
