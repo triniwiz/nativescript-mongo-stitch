@@ -64,7 +64,7 @@ client.auth.loginWithCredential(new AnonymousCredential()).then(user => {
 });
 ```
 
-### Initialize & update remote
+### Initialize & Update remote
 
 ```typescript
 import {
@@ -105,13 +105,15 @@ Stitch.initializeAppClient('<your-client-app-id>').then(client => {
 });
 ```
 
-### Initialize & update local
+### Initialize & Update local
+
+```typescript
+
 import {
     Stitch,
     LocalInsertOneResult
 } from 'nativescript-mongo-stitch-sdk';
 
-```typescript
 import {
     Stitch,
     LocalInsertOneResult,
